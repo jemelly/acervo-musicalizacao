@@ -1,0 +1,528 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Acervo de Musicalização</title>
+  <style>
+    /* Estilos globais para o corpo da página */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+      /* O background agora será gerenciado via JavaScript e React */
+      /* background: linear-gradient(45deg, #FFD1DC, #C3F8FF, #D1FFC3); */
+      /* background-size: 400% 400%; */
+      /* animation: gradientAnimation 15s ease infinite; */
+      transition: background-color 0.5s ease, background-image 0.5s ease; /* Transição suave para o background */
+    }
+
+    /* Animação para o plano de fundo do body (se for um gradiente animado) */
+    @keyframes gradientAnimation {
+        0% {background-position: 0% 50%;}
+        50% {background-position: 100% 50%;}
+        100% {background-position: 0% 50;}
+    }
+
+    /* Estilo para o título principal */
+    h1 {
+      text-align: center;
+      font-size: 2.5em;
+      color: #5c33a2; /* Cor roxa */
+      margin-bottom: 10px;
+    }
+    /* Estilo para os subtítulos */
+    h2 {
+      color: #444;
+      margin-bottom: 10px;
+    }
+    /* Estilo para o container principal da aplicação */
+    .container {
+      background-color: rgba(255, 255, 255, 0.9); /* Branco quase opaco */
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* Sombra um pouco mais forte */
+    }
+    /* Margem superior para seções específicas */
+    .activity-form, .search-bar, .activity-list, .background-settings {
+      margin-top: 30px;
+    }
+    /* Estilo para inputs e textareas */
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-sizing: border-box; /* Inclui padding e border na largura */
+    }
+    /* Ajuste para textarea */
+    textarea {
+      resize: vertical; /* Permite redimensionar verticalmente */
+      min-height: 80px;
+    }
+    /* Estilo para botões gerais */
+    button {
+      background: linear-gradient(to right, #5c33a2, #8e44ad); /* Gradiente roxo */
+      color: white;
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease; /* Transição suave no hover */
+      margin-right: 10px; /* Adicionado para espaçamento entre botões no formulário */
+    }
+    button:hover {
+      background: linear-gradient(to right, #512d91, #732d91); /* Gradiente mais escuro no hover */
+    }
+    /* Estilo específico para o botão de apagar */
+    .delete-button {
+      background: #ff4d4d; /* Vermelho */
+      margin-top: 10px;
+      margin-right: 0; /* Remover margin-right para botão de apagar */
+    }
+    .delete-button:hover {
+      background: #cc0000; /* Vermelho mais escuro no hover */
+    }
+    /* Estilo para o botão de editar */
+    .edit-button {
+        background: #ffc107; /* Amarelo */
+        color: #333; /* Texto escuro para contraste */
+    }
+    .edit-button:hover {
+        background: #e0a800; /* Amarelo mais escuro */
+    }
+    /* Estilo para o botão de cancelar edição ou configurações */
+    .cancel-button {
+        background: #6c757d; /* Cinza */
+    }
+    .cancel-button:hover {
+        background: #5a6268; /* Cinza mais escuro */
+    }
+
+    /* Estilo para cada cartão de atividade */
+    .activity-card {
+      border-left: 6px solid #8e44ad; /* Borda esquerda roxa */
+      background-color: #faf9ff; /* Fundo claro */
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* Sombra suave */
+    }
+    .activity-card h3 {
+      margin-top: 0;
+      color: #5c33a2; /* Cor roxa */
+    }
+    .activity-card p {
+      margin: 6px 0;
+    }
+    .activity-card a {
+      color: #0077cc; /* Azul para links */
+      text-decoration: none;
+    }
+    .activity-card a:hover {
+      text-decoration: underline;
+    }
+    /* Estilo específico para o input da barra de busca */
+    .search-bar input {
+      border: 2px solid #5c33a2; /* Borda roxa mais evidente */
+    }
+    /* Estilo para o rodapé */
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 14px;
+      color: #888;
+    }
+    /* Estilo para o grupo de botões no formulário */
+    .form-buttons {
+      display: flex;
+      justify-content: flex-end; /* Alinha os botões à direita */
+      gap: 10px; /* Espaço entre os botões */
+      margin-top: 15px;
+    }
+
+    /* Estilos para o novo componente de configurações de fundo */
+    .background-settings {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+
+    .background-settings input[type="color"],
+    .background-settings input[type="file"] {
+      width: auto; /* Ajuste para não ocupar 100% */
+      margin: 10px;
+      display: inline-block; /* Para alinhar lado a lado */
+      vertical-align: middle;
+    }
+
+    .background-settings .options-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .background-settings .options-buttons button {
+        margin-right: 0; /* Remove a margem extra do botão */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Acervo de Musicalização</h1>
+    <div id="root"></div> </div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    // Desestruturação dos hooks useState e useEffect do React
+    const { useState, useEffect } = React;
+
+    // Componente para o formulário de adicionar/editar atividades
+    function ActivityForm({ onSave, currentActivity, onCancelEdit }) {
+      // Estados para os campos do formulário
+      const [id, setId] = useState(null); // Adicionado para armazenar o ID da atividade em edição
+      const [title, setTitle] = useState('');
+      const [description, setDescription] = useState('');
+      const [keywords, setKeywords] = useState('');
+      const [videoLink, setVideoLink] = useState('');
+
+      // useEffect para preencher o formulário quando uma atividade é selecionada para edição
+      useEffect(() => {
+        if (currentActivity) {
+          setId(currentActivity.id);
+          setTitle(currentActivity.title);
+          setDescription(currentActivity.description);
+          setKeywords(currentActivity.keywords.join(', ')); // Converte array de keywords para string
+          setVideoLink(currentActivity.videoLink || ''); // Garante que é uma string vazia se não houver link
+        } else {
+          // Limpa os campos quando não há atividade em edição
+          setId(null);
+          setTitle('');
+          setDescription('');
+          setKeywords('');
+          setVideoLink('');
+        }
+      }, [currentActivity]); // Roda sempre que currentActivity muda
+
+      // Função para lidar com o envio do formulário
+      const handleSubmit = (e) => {
+        e.preventDefault(); // Previne o recarregamento da página
+        const activity = {
+          id: id || Date.now(), // Usa o ID existente ou gera um novo para nova atividade
+          title,
+          description,
+          keywords: keywords.split(',').map(k => k.trim()), // Converte string de keywords em array
+          videoLink,
+        };
+        onSave(activity); // Chama a função para salvar a atividade no componente pai
+        // Limpa os campos do formulário
+        setId(null);
+        setTitle('');
+        setDescription('');
+        setKeywords('');
+        setVideoLink('');
+      };
+
+      return (
+        <form onSubmit={handleSubmit} className="activity-form">
+          <h2>{currentActivity ? 'Editar Atividade' : 'Adicionar Nova Atividade'}</h2>
+          <input type="text" placeholder="Título da Atividade" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          <textarea placeholder="Descrição da Atividade" value={description} onChange={(e) => setDescription(e.target.value)} required />
+          <input type="text" placeholder="Palavras-chave (separadas por vírgulas)" value={keywords} onChange={(e) => setKeywords(e.target.value)} required />
+          <input type="text" placeholder="Link do vídeo (opcional)" value={videoLink} onChange={(e) => setVideoLink(e.target.value)} />
+          <div className="form-buttons">
+            <button type="submit">{currentActivity ? 'Salvar Edição' : 'Salvar Atividade'}</button>
+            {currentActivity && (
+              <button type="button" className="cancel-button" onClick={onCancelEdit}>Cancelar</button>
+            )}
+          </div>
+        </form>
+      );
+    }
+
+    // Componente para a barra de busca
+    function SearchBar({ onSearch }) {
+      return (
+        <div className="search-bar">
+          <h2>Buscar Atividade</h2>
+          <input type="text" placeholder="Digite uma palavra-chave..." onChange={(e) => onSearch(e.target.value)} />
+        </div>
+      );
+    }
+
+    // Componente para a lista de atividades
+    function ActivityList({ activities, onDelete, onEdit }) {
+      return (
+        <div className="activity-list">
+          <h2>Atividades Salvas</h2>
+          {activities.length === 0 ? (
+            <p>Nenhuma atividade encontrada.</p> // Mensagem se não houver atividades
+          ) : (
+            activities.map((activity) => (
+              <div key={activity.id} className="activity-card">
+                <h3>{activity.title}</h3>
+                <p>{activity.description}</p>
+                <p><strong>Palavras-chave:</strong> {activity.keywords.join(', ')}</p>
+                {activity.videoLink && (
+                  <p><a href={activity.videoLink} target="_blank" rel="noopener noreferrer">Ver Vídeo</a></p>
+                )}
+                <div className="activity-actions"> {/* Contêiner para os botões de ação */}
+                    <button className="edit-button" onClick={() => onEdit(activity)}>Editar</button>
+                    <button className="delete-button" onClick={() => onDelete(activity.id)}>Apagar</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      );
+    }
+
+    // NOVO COMPONENTE: Settings para mudar o plano de fundo
+    function BackgroundSettings({ onApplyBackground, onClose }) {
+      const [bgColor, setBgColor] = useState('');
+      const [bgImageFile, setBgImageFile] = useState(null);
+      const [gradientColors, setGradientColors] = useState('#FFD1DC, #C3F8FF, #D1FFC3'); // Cores padrão do gradiente
+
+      const handleColorChange = (e) => {
+        setBgColor(e.target.value);
+        setBgImageFile(null); // Limpa imagem ao escolher cor
+        setGradientColors(''); // Limpa gradiente ao escolher cor
+      };
+
+      const handleImageChange = (e) => {
+        setBgImageFile(e.target.files[0]);
+        setBgColor(''); // Limpa cor ao escolher imagem
+        setGradientColors(''); // Limpa gradiente ao escolher imagem
+      };
+
+      const handleGradientChange = (e) => {
+        setGradientColors(e.target.value);
+        setBgColor(''); // Limpa cor ao escolher gradiente
+        setBgImageFile(null); // Limpa imagem ao escolher gradiente
+      };
+
+      const applySettings = () => {
+        if (bgColor) {
+          onApplyBackground({ type: 'color', value: bgColor });
+        } else if (bgImageFile) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            onApplyBackground({ type: 'image', value: reader.result });
+          };
+          reader.readAsDataURL(bgImageFile);
+        } else if (gradientColors) {
+            onApplyBackground({ type: 'gradient', value: gradientColors });
+        } else {
+            // Se nada for selecionado, pode reverter para um padrão ou avisar
+            alert('Por favor, selecione uma cor, imagem ou gradiente para o fundo.');
+            return;
+        }
+        onClose(); // Fecha as configurações após aplicar
+      };
+
+      const resetBackground = () => {
+          onApplyBackground({ type: 'default' }); // Volta para o padrão
+          setBgColor('');
+          setBgImageFile(null);
+          setGradientColors('#FFD1DC, #C3F8FF, #D1FFC3'); // Volta ao gradiente padrão
+          onClose();
+      }
+
+      return (
+        <div className="background-settings">
+          <h2>Configurações de Plano de Fundo</h2>
+          <div>
+            <h3>Cor Sólida:</h3>
+            <input type="color" value={bgColor} onChange={handleColorChange} />
+          </div>
+          <div>
+            <h3>Imagem de Fundo:</h3>
+            <input type="file" accept="image/*" onChange={handleImageChange} />
+            {bgImageFile && <p>Arquivo selecionado: {bgImageFile.name}</p>}
+          </div>
+          <div>
+            <h3>Gradiente Personalizado:</h3>
+            <p>Ex: #FFD1DC, #C3F8FF, #D1FFC3 (separado por vírgulas)</p>
+            <input
+                type="text"
+                placeholder="Cores do gradiente (ex: #FFD1DC, #C3F8FF)"
+                value={gradientColors}
+                onChange={handleGradientChange}
+            />
+          </div>
+          <div className="options-buttons">
+            <button onClick={applySettings}>Aplicar Fundo</button>
+            <button className="cancel-button" onClick={resetBackground}>Fundo Padrão</button>
+            <button className="cancel-button" onClick={onClose}>Fechar</button>
+          </div>
+        </div>
+      );
+    }
+
+    // Componente principal da aplicação
+    function App() {
+      // Estado para armazenar as atividades
+      const [activities, setActivities] = useState([]);
+      // Estado para o termo de busca
+      const [searchTerm, setSearchTerm] = useState('');
+      // Estado para a atividade atualmente em edição
+      const [activityToEdit, setActivityToEdit] = useState(null);
+      // NOVO ESTADO: Controla a visibilidade das configurações de fundo
+      const [showBackgroundSettings, setShowBackgroundSettings] = useState(false);
+      // NOVO ESTADO: Armazena as propriedades do plano de fundo
+      const [backgroundStyle, setBackgroundStyle] = useState({
+        type: 'gradient',
+        value: '#FFD1DC, #C3F8FF, #D1FFC3' // Gradiente padrão inicial
+      });
+
+      // useEffect para carregar atividades do localStorage ao montar o componente
+      useEffect(() => {
+        const storedActivities = localStorage.getItem('atividadesMusicais');
+        if (storedActivities) {
+          setActivities(JSON.parse(storedActivities));
+        }
+        // Carrega configurações de fundo salvas
+        const storedBackground = localStorage.getItem('appBackground');
+        if (storedBackground) {
+          setBackgroundStyle(JSON.parse(storedBackground));
+        }
+      }, []); // Array de dependências vazio para rodar apenas uma vez
+
+      // useEffect para salvar atividades no localStorage sempre que o estado 'activities' muda
+      useEffect(() => {
+        localStorage.setItem('atividadesMusicais', JSON.stringify(activities));
+      }, [activities]); // Roda sempre que 'activities' é atualizado
+
+      // NOVO useEffect: Salva as configurações de fundo no localStorage
+      useEffect(() => {
+          localStorage.setItem('appBackground', JSON.stringify(backgroundStyle));
+      }, [backgroundStyle]);
+
+      // NOVO useEffect: Aplica o estilo de fundo ao elemento <body>
+      useEffect(() => {
+          const body = document.body;
+          // Limpa estilos anteriores
+          body.style.backgroundColor = '';
+          body.style.backgroundImage = '';
+          body.style.backgroundSize = '';
+          body.style.backgroundRepeat = '';
+          body.style.backgroundPosition = '';
+          body.style.backgroundAttachment = '';
+          body.style.animation = ''; // Limpa animação de gradiente
+
+          // Aplica o novo estilo
+          if (backgroundStyle.type === 'color') {
+              body.style.backgroundColor = backgroundStyle.value;
+          } else if (backgroundStyle.type === 'image') {
+              body.style.backgroundImage = `url('${backgroundStyle.value}')`;
+              body.style.backgroundSize = 'cover';
+              body.style.backgroundRepeat = 'no-repeat';
+              body.style.backgroundPosition = 'center center';
+              body.style.backgroundAttachment = 'fixed';
+          } else if (backgroundStyle.type === 'gradient') {
+              body.style.backgroundImage = `linear-gradient(45deg, ${backgroundStyle.value})`;
+              body.style.backgroundSize = '400% 400%'; /* Para animação */
+              body.style.animation = 'gradientAnimation 15s ease infinite'; /* Reativa a animação */
+          } else if (backgroundStyle.type === 'default') {
+              // Reverte para o gradiente padrão animado
+              body.style.backgroundImage = `linear-gradient(45deg, #FFD1DC, #C3F8FF, #D1FFC3)`;
+              body.style.backgroundSize = '400% 400%';
+              body.style.animation = 'gradientAnimation 15s ease infinite';
+          }
+      }, [backgroundStyle]);
+
+
+      // Função para salvar uma atividade (adicionar ou editar)
+      const saveActivity = (activity) => {
+        if (activity.id && activities.some(a => a.id === activity.id)) {
+          // Se a atividade já tem um ID e existe na lista, edita
+          setActivities(activities.map(a => (a.id === activity.id ? activity : a)));
+        } else {
+          // Caso contrário, adiciona como nova atividade
+          setActivities([...activities, activity]);
+        }
+        setActivityToEdit(null); // Limpa a atividade em edição após salvar
+      };
+
+      // Função para deletar uma atividade
+      const deleteActivity = (id) => {
+        if (window.confirm('Tem certeza que deseja apagar esta atividade?')) {
+          const updated = activities.filter((activity) => activity.id !== id);
+          setActivities(updated);
+        }
+      };
+
+      // Função para iniciar a edição de uma atividade
+      const editActivity = (activity) => {
+        setActivityToEdit(activity);
+      };
+
+      // Função para cancelar a edição
+      const cancelEdit = () => {
+        setActivityToEdit(null);
+      };
+
+      // Função para aplicar o estilo de fundo
+      const applyBackground = (style) => {
+        setBackgroundStyle(style);
+      };
+
+      // Filtra as atividades com base no termo de busca nas palavras-chave (e também no título e descrição)
+      const filteredActivities = activities.filter((activity) =>
+        activity.keywords.some((keyword) =>
+          keyword.toLowerCase().includes(searchTerm.toLowerCase())
+        ) ||
+        activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        activity.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      return (
+        <>
+          {/* Botão para abrir as configurações de plano de fundo */}
+          <div style={{textAlign: 'right', marginBottom: '20px'}}>
+              <button onClick={() => setShowBackgroundSettings(!showBackgroundSettings)} className="settings-button">
+                  {showBackgroundSettings ? 'Fechar Configurações' : 'Mudar Plano de Fundo'}
+              </button>
+          </div>
+
+          {showBackgroundSettings && (
+            <BackgroundSettings
+              onApplyBackground={applyBackground}
+              onClose={() => setShowBackgroundSettings(false)}
+            />
+          )}
+
+          <ActivityForm
+            onSave={saveActivity}
+            currentActivity={activityToEdit}
+            onCancelEdit={cancelEdit}
+          />
+          <SearchBar onSearch={setSearchTerm} />
+          <ActivityList
+            activities={filteredActivities}
+            onDelete={deleteActivity}
+            onEdit={editActivity}
+          />
+        </>
+      );
+    }
+
+    // Renderiza o componente principal 'App' no elemento com id 'root'
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <div class="footer">Desenvolvido para educadores de musicalização por Jemelly Xavier</div>
+</body>
+</html>
