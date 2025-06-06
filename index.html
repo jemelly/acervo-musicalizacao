@@ -176,12 +176,13 @@
     <h1>Acervo de Musicalização</h1>
     <div id="root"></div> </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9/firebase-firestore-compat.js"></script>
 
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
 
   <script type="text/babel">
     // SUAS CREDENCIAIS DO FIREBASE FORAM COLOCADAS AQUI:
@@ -645,7 +646,7 @@
             <BackgroundSettings
               onApplyBackground={applyBackground}
               onClose={() => setShowBackgroundSettings(false)}
-              currentBackground={backgroundStyle} // <--- ESTA LINHA FOI ADICIONADA/CORRIGIDA
+              currentBackground={backgroundStyle}
             />
           )}
 
