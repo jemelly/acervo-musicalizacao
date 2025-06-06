@@ -11,10 +11,6 @@
       padding: 20px;
       max-width: 900px;
       margin: auto;
-      /* O background agora será gerenciado via JavaScript e React */
-      /* background: linear-gradient(45deg, #FFD1DC, #C3F8FF, #D1FFC3); */
-      /* background-size: 400% 400%; */
-      /* animation: gradientAnimation 15s ease infinite; */
       transition: background-color 0.5s ease, background-image 0.5s ease; /* Transição suave para o background */
     }
 
@@ -156,7 +152,7 @@
     }
 
     .background-settings input[type="color"],
-    .background-settings input[type="file"] {
+    .background-settings input[type="text"] { /* Alterado de file para text */
       width: auto; /* Ajuste para não ocupar 100% */
       margin: 10px;
       display: inline-block; /* Para alinhar lado a lado */
@@ -180,54 +176,64 @@
     <h1>Acervo de Musicalização</h1>
     <div id="root"></div> </div>
 
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="text/babel">
-    // Desestruturação dos hooks useState e useEffect do React
-    const { useState, useEffect } = React;
+    // SUAS CREDENCIAIS DO FIREBASE FORAM COLOCADAS AQUI:
+    const firebaseConfig = {
+      apiKey: "AIzaSyAk5nYXl-qElWhMHQlytuV0KsbkfMLKp3w",
+      authDomain: "meuacervoonline-c9473.firebaseapp.com",
+      projectId: "meuacervoonline-c9473",
+      storageBucket: "meuacervoonline-c9473.firebasestorage.app",
+      messagingSenderId: "570611243354",
+      appId: "1:570611243354:web:43d4209a6c55c8dc313b63"
+    };
+
+    // Inicializa o Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = app.firestore(); // Obtém a referência para o Firestore
+
+    const { useState, useEffect, useRef } = React;
 
     // Componente para o formulário de adicionar/editar atividades
     function ActivityForm({ onSave, currentActivity, onCancelEdit }) {
-      // Estados para os campos do formulário
-      const [id, setId] = useState(null); // Adicionado para armazenar o ID da atividade em edição
       const [title, setTitle] = useState('');
       const [description, setDescription] = useState('');
       const [keywords, setKeywords] = useState('');
       const [videoLink, setVideoLink] = useState('');
 
-      // useEffect para preencher o formulário quando uma atividade é selecionada para edição
       useEffect(() => {
         if (currentActivity) {
-          setId(currentActivity.id);
           setTitle(currentActivity.title);
           setDescription(currentActivity.description);
-          setKeywords(currentActivity.keywords.join(', ')); // Converte array de keywords para string
-          setVideoLink(currentActivity.videoLink || ''); // Garante que é uma string vazia se não houver link
+          setKeywords(currentActivity.keywords ? currentActivity.keywords.join(', ') : '');
+          setVideoLink(currentActivity.videoLink || '');
         } else {
-          // Limpa os campos quando não há atividade em edição
-          setId(null);
           setTitle('');
           setDescription('');
           setKeywords('');
           setVideoLink('');
         }
-      }, [currentActivity]); // Roda sempre que currentActivity muda
+      }, [currentActivity]);
 
-      // Função para lidar com o envio do formulário
       const handleSubmit = (e) => {
-        e.preventDefault(); // Previne o recarregamento da página
-        const activity = {
-          id: id || Date.now(), // Usa o ID existente ou gera um novo para nova atividade
+        e.preventDefault();
+        if (!title.trim() || !description.trim() || !keywords.trim()) {
+          alert('Título, descrição e palavras-chave não podem ser vazios.');
+          return;
+        }
+        onSave({
+          id: currentActivity ? currentActivity.id : null, // ID será gerenciado pelo Firestore ao adicionar
           title,
           description,
-          keywords: keywords.split(',').map(k => k.trim()), // Converte string de keywords em array
-          videoLink,
-        };
-        onSave(activity); // Chama a função para salvar a atividade no componente pai
-        // Limpa os campos do formulário
-        setId(null);
+          keywords: keywords.split(',').map(k => k.trim()).filter(k => k), // Filtra palavras-chave vazias
+          videoLink
+        });
         setTitle('');
         setDescription('');
         setKeywords('');
@@ -253,10 +259,49 @@
 
     // Componente para a barra de busca
     function SearchBar({ onSearch }) {
+      const [localSearchTerm, setLocalSearchTerm] = useState('');
+      const debounceTimeout = useRef(null);
+
+      const handleChange = (e) => {
+        const value = e.target.value;
+        setLocalSearchTerm(value);
+
+        if (debounceTimeout.current) {
+          clearTimeout(debounceTimeout.current);
+        }
+
+        debounceTimeout.current = setTimeout(() => {
+          onSearch(value);
+        }, 300);
+      };
+
       return (
         <div className="search-bar">
           <h2>Buscar Atividade</h2>
-          <input type="text" placeholder="Digite uma palavra-chave..." onChange={(e) => onSearch(e.target.value)} />
+          <input
+            type="text"
+            placeholder="Digite uma palavra-chave..."
+            value={localSearchTerm}
+            onChange={handleChange}
+          />
+        </div>
+      );
+    }
+
+    // Componente para um item de atividade individual
+    function ActivityItem({ activity, onDelete, onEdit }) {
+      return (
+        <div className="activity-card">
+          <h3>{activity.title}</h3>
+          <p>{activity.description}</p>
+          <p><strong>Palavras-chave:</strong> {activity.keywords.join(', ')}</p>
+          {activity.videoLink && (
+            <p><a href={activity.videoLink} target="_blank" rel="noopener noreferrer">Ver Vídeo</a></p>
+          )}
+          <div className="activity-actions">
+              <button className="edit-button" onClick={() => onEdit(activity)}>Editar</button>
+              <button className="delete-button" onClick={() => onDelete(activity.id)}>Apagar</button>
+          </div>
         </div>
       );
     }
@@ -267,75 +312,95 @@
         <div className="activity-list">
           <h2>Atividades Salvas</h2>
           {activities.length === 0 ? (
-            <p>Nenhuma atividade encontrada.</p> // Mensagem se não houver atividades
+            <p>Nenhuma atividade encontrada.</p>
           ) : (
             activities.map((activity) => (
-              <div key={activity.id} className="activity-card">
-                <h3>{activity.title}</h3>
-                <p>{activity.description}</p>
-                <p><strong>Palavras-chave:</strong> {activity.keywords.join(', ')}</p>
-                {activity.videoLink && (
-                  <p><a href={activity.videoLink} target="_blank" rel="noopener noreferrer">Ver Vídeo</a></p>
-                )}
-                <div className="activity-actions"> {/* Contêiner para os botões de ação */}
-                    <button className="edit-button" onClick={() => onEdit(activity)}>Editar</button>
-                    <button className="delete-button" onClick={() => onDelete(activity.id)}>Apagar</button>
-                </div>
-              </div>
+              <ActivityItem
+                key={activity.id}
+                activity={activity}
+                onDelete={onDelete}
+                onEdit={onEdit}
+              />
             ))
           )}
         </div>
       );
     }
 
-    // NOVO COMPONENTE: Settings para mudar o plano de fundo
-    function BackgroundSettings({ onApplyBackground, onClose }) {
+    // Componente para as configurações de plano de fundo
+    function BackgroundSettings({ onApplyBackground, onClose, currentBackground }) {
       const [bgColor, setBgColor] = useState('');
-      const [bgImageFile, setBgImageFile] = useState(null);
-      const [gradientColors, setGradientColors] = useState('#FFD1DC, #C3F8FF, #D1FFC3'); // Cores padrão do gradiente
+      const [bgImageUrl, setBgImageUrl] = useState(''); // Estado para URL da imagem
+      const [gradientColors, setGradientColors] = useState('');
+      const [isAnimated, setIsAnimated] = useState(true); // Adicionado para controlar animação do gradiente
+      const [gradientDirection, setGradientDirection] = useState('45deg'); // Direção do gradiente
+
+      useEffect(() => {
+        if (currentBackground) {
+          if (currentBackground.type === 'color') {
+            setBgColor(currentBackground.value);
+            setBgImageUrl('');
+            setGradientColors('');
+          } else if (currentBackground.type === 'image') {
+            setBgImageUrl(currentBackground.value);
+            setBgColor('');
+            setGradientColors('');
+          } else if (currentBackground.type === 'gradient') {
+            setGradientColors(currentBackground.value.colors);
+            setIsAnimated(currentBackground.value.animated);
+            setGradientDirection(currentBackground.value.direction);
+            setBgColor('');
+            setBgImageUrl('');
+          }
+        }
+      }, [currentBackground]);
 
       const handleColorChange = (e) => {
         setBgColor(e.target.value);
-        setBgImageFile(null); // Limpa imagem ao escolher cor
-        setGradientColors(''); // Limpa gradiente ao escolher cor
+        setBgImageUrl('');
+        setGradientColors('');
       };
 
-      const handleImageChange = (e) => {
-        setBgImageFile(e.target.files[0]);
-        setBgColor(''); // Limpa cor ao escolher imagem
-        setGradientColors(''); // Limpa gradiente ao escolher imagem
+      const handleImageUrlChange = (e) => {
+        setBgImageUrl(e.target.value);
+        setBgColor('');
+        setGradientColors('');
       };
 
-      const handleGradientChange = (e) => {
+      const handleGradientColorsChange = (e) => {
         setGradientColors(e.target.value);
-        setBgColor(''); // Limpa cor ao escolher gradiente
-        setBgImageFile(null); // Limpa imagem ao escolher gradiente
+        setBgColor('');
+        setBgImageUrl('');
       };
 
       const applySettings = () => {
         if (bgColor) {
           onApplyBackground({ type: 'color', value: bgColor });
-        } else if (bgImageFile) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            onApplyBackground({ type: 'image', value: reader.result });
-          };
-          reader.readAsDataURL(bgImageFile);
+        } else if (bgImageUrl) {
+          onApplyBackground({ type: 'image', value: bgImageUrl });
         } else if (gradientColors) {
-            onApplyBackground({ type: 'gradient', value: gradientColors });
+            onApplyBackground({
+                type: 'gradient',
+                value: {
+                    colors: gradientColors,
+                    direction: gradientDirection,
+                    animated: isAnimated
+                }
+            });
         } else {
-            // Se nada for selecionado, pode reverter para um padrão ou avisar
             alert('Por favor, selecione uma cor, imagem ou gradiente para o fundo.');
             return;
         }
-        onClose(); // Fecha as configurações após aplicar
+        onClose();
       };
 
       const resetBackground = () => {
-          onApplyBackground({ type: 'default' }); // Volta para o padrão
+          onApplyBackground({ type: 'default' });
           setBgColor('');
-          setBgImageFile(null);
-          setGradientColors('#FFD1DC, #C3F8FF, #D1FFC3'); // Volta ao gradiente padrão
+          setBgImageUrl('');
+          setGradientColors('#FFD1DC, #C3F8FF, #D1FFC3');
+          setIsAnimated(true);
+          setGradientDirection('45deg');
           onClose();
       }
 
@@ -347,9 +412,13 @@
             <input type="color" value={bgColor} onChange={handleColorChange} />
           </div>
           <div>
-            <h3>Imagem de Fundo:</h3>
-            <input type="file" accept="image/*" onChange={handleImageChange} />
-            {bgImageFile && <p>Arquivo selecionado: {bgImageFile.name}</p>}
+            <h3>Imagem de Fundo (URL):</h3>
+            <input
+              type="text"
+              placeholder="Insira a URL da imagem"
+              value={bgImageUrl}
+              onChange={handleImageUrlChange}
+            />
           </div>
           <div>
             <h3>Gradiente Personalizado:</h3>
@@ -358,8 +427,32 @@
                 type="text"
                 placeholder="Cores do gradiente (ex: #FFD1DC, #C3F8FF)"
                 value={gradientColors}
-                onChange={handleGradientChange}
+                onChange={handleGradientColorsChange}
             />
+            <label style={{display: 'block', marginTop: '10px'}}>
+                Direção:
+                <select value={gradientDirection} onChange={(e) => setGradientDirection(e.target.value)} style={{marginLeft: '5px'}}>
+                    <option value="to right">Para a direita</option>
+                    <option value="to bottom right">Para baixo e direita</option>
+                    <option value="to bottom">Para baixo</option>
+                    <option value="to bottom left">Para baixo e esquerda</option>
+                    <option value="to left">Para a esquerda</option>
+                    <option value="to top left">Para cima e esquerda</option>
+                    <option value="to top">Para cima</option>
+                    <option value="to top right">Para cima e direita</option>
+                    <option value="45deg">45 Graus</option>
+                    <option value="90deg">90 Graus</option>
+                    <option value="180deg">180 Graus</option>
+                </select>
+            </label>
+            <label style={{display: 'block', marginTop: '10px'}}>
+                <input
+                    type="checkbox"
+                    checked={isAnimated}
+                    onChange={(e) => setIsAnimated(e.target.checked)}
+                />
+                Animar Gradiente
+            </label>
           </div>
           <div className="options-buttons">
             <button onClick={applySettings}>Aplicar Fundo</button>
@@ -372,44 +465,71 @@
 
     // Componente principal da aplicação
     function App() {
-      // Estado para armazenar as atividades
       const [activities, setActivities] = useState([]);
-      // Estado para o termo de busca
       const [searchTerm, setSearchTerm] = useState('');
-      // Estado para a atividade atualmente em edição
       const [activityToEdit, setActivityToEdit] = useState(null);
-      // NOVO ESTADO: Controla a visibilidade das configurações de fundo
       const [showBackgroundSettings, setShowBackgroundSettings] = useState(false);
-      // NOVO ESTADO: Armazena as propriedades do plano de fundo
       const [backgroundStyle, setBackgroundStyle] = useState({
         type: 'gradient',
-        value: '#FFD1DC, #C3F8FF, #D1FFC3' // Gradiente padrão inicial
+        value: {
+            colors: '#FFD1DC, #C3F8FF, #D1FFC3',
+            direction: '45deg',
+            animated: true
+        }
       });
 
-      // useEffect para carregar atividades do localStorage ao montar o componente
+      // Efeito para carregar atividades do Firestore e o background salvo
       useEffect(() => {
-        const storedActivities = localStorage.getItem('atividadesMusicais');
-        if (storedActivities) {
-          setActivities(JSON.parse(storedActivities));
-        }
-        // Carrega configurações de fundo salvas
-        const storedBackground = localStorage.getItem('appBackground');
-        if (storedBackground) {
-          setBackgroundStyle(JSON.parse(storedBackground));
-        }
-      }, []); // Array de dependências vazio para rodar apenas uma vez
+        // Carrega atividades em tempo real do Firestore
+        const unsubscribeActivities = db.collection('activities').onSnapshot(snapshot => {
+          const loadedActivities = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setActivities(loadedActivities);
+        }, error => {
+            console.error("Erro ao carregar atividades:", error);
+            alert('Ocorreu um erro ao carregar as atividades. Verifique o console.');
+        });
 
-      // useEffect para salvar atividades no localStorage sempre que o estado 'activities' muda
-      useEffect(() => {
-        localStorage.setItem('atividadesMusicais', JSON.stringify(activities));
-      }, [activities]); // Roda sempre que 'activities' é atualizado
+        // Carrega o background salvo do Firestore
+        const unsubscribeBackground = db.collection('settings').doc('appBackground').onSnapshot(doc => {
+            if (doc.exists) {
+                const savedBackground = doc.data().style;
+                // Garante valores padrão para propriedades que podem não ter sido salvas antes
+                if (savedBackground.type === 'gradient') {
+                    savedBackground.value = {
+                        colors: savedBackground.value.colors || '#FFD1DC, #C3F8FF, #D1FFC3',
+                        direction: savedBackground.value.direction || '45deg',
+                        animated: savedBackground.value.animated !== undefined ? savedBackground.value.animated : true
+                    };
+                }
+                setBackgroundStyle(savedBackground);
+            } else {
+                // Se não há background salvo, aplica o padrão inicial
+                setBackgroundStyle({
+                    type: 'gradient',
+                    value: {
+                        colors: '#FFD1DC, #C3F8FF, #D1FFC3',
+                        direction: '45deg',
+                        animated: true
+                    }
+                });
+            }
+        }, error => {
+            console.error("Erro ao carregar configurações de background:", error);
+            alert('Ocorreu um erro ao carregar as configurações de plano de fundo. Verifique o console.');
+        });
 
-      // NOVO useEffect: Salva as configurações de fundo no localStorage
-      useEffect(() => {
-          localStorage.setItem('appBackground', JSON.stringify(backgroundStyle));
-      }, [backgroundStyle]);
+        // Retorna uma função de limpeza para desinscrever os listeners quando o componente desmontar
+        return () => {
+            unsubscribeActivities();
+            unsubscribeBackground();
+        };
+      }, []);
 
-      // NOVO useEffect: Aplica o estilo de fundo ao elemento <body>
+
+      // Efeito para aplicar o estilo de fundo ao elemento <body>
       useEffect(() => {
           const body = document.body;
           // Limpa estilos anteriores
@@ -419,7 +539,7 @@
           body.style.backgroundRepeat = '';
           body.style.backgroundPosition = '';
           body.style.backgroundAttachment = '';
-          body.style.animation = ''; // Limpa animação de gradiente
+          body.style.animation = '';
 
           // Aplica o novo estilo
           if (backgroundStyle.type === 'color') {
@@ -431,9 +551,15 @@
               body.style.backgroundPosition = 'center center';
               body.style.backgroundAttachment = 'fixed';
           } else if (backgroundStyle.type === 'gradient') {
-              body.style.backgroundImage = `linear-gradient(45deg, ${backgroundStyle.value})`;
-              body.style.backgroundSize = '400% 400%'; /* Para animação */
-              body.style.animation = 'gradientAnimation 15s ease infinite'; /* Reativa a animação */
+              const { colors, direction, animated } = backgroundStyle.value;
+              body.style.backgroundImage = `linear-gradient(${direction}, ${colors})`;
+              if (animated) {
+                body.style.backgroundSize = '400% 400%';
+                body.style.animation = 'gradientAnimation 15s ease infinite';
+              } else {
+                body.style.backgroundSize = 'auto auto';
+                body.style.animation = 'none';
+              }
           } else if (backgroundStyle.type === 'default') {
               // Reverte para o gradiente padrão animado
               body.style.backgroundImage = `linear-gradient(45deg, #FFD1DC, #C3F8FF, #D1FFC3)`;
@@ -443,53 +569,72 @@
       }, [backgroundStyle]);
 
 
-      // Função para salvar uma atividade (adicionar ou editar)
-      const saveActivity = (activity) => {
-        if (activity.id && activities.some(a => a.id === activity.id)) {
-          // Se a atividade já tem um ID e existe na lista, edita
-          setActivities(activities.map(a => (a.id === activity.id ? activity : a)));
-        } else {
-          // Caso contrário, adiciona como nova atividade
-          setActivities([...activities, activity]);
+      // Função para salvar uma atividade no Firestore (adicionar ou editar)
+      const saveActivity = async (activity) => {
+        try {
+          if (activity.id) {
+            // Edita atividade existente
+            await db.collection('activities').doc(activity.id).update(activity);
+            alert('Atividade atualizada com sucesso!');
+          } else {
+            // Adiciona nova atividade, Firestore gera o ID
+            await db.collection('activities').add(activity);
+            alert('Atividade adicionada com sucesso!');
+          }
+          setActivityToEdit(null); // Limpa o estado de edição
+        } catch (error) {
+          console.error("Erro ao salvar atividade:", error);
+          alert('Ocorreu um erro ao salvar a atividade. Verifique o console para mais detalhes.');
         }
-        setActivityToEdit(null); // Limpa a atividade em edição após salvar
       };
 
-      // Função para deletar uma atividade
-      const deleteActivity = (id) => {
+      // Função para deletar uma atividade do Firestore
+      const deleteActivity = async (id) => {
         if (window.confirm('Tem certeza que deseja apagar esta atividade?')) {
-          const updated = activities.filter((activity) => activity.id !== id);
-          setActivities(updated);
+          try {
+            await db.collection('activities').doc(id).delete();
+            alert('Atividade apagada com sucesso!');
+          } catch (error) {
+            console.error("Erro ao apagar atividade:", error);
+            alert('Ocorreu um erro ao apagar a atividade. Verifique o console para mais detalhes.');
+          }
         }
       };
 
-      // Função para iniciar a edição de uma atividade
+      // Função para carregar uma atividade para edição
       const editActivity = (activity) => {
         setActivityToEdit(activity);
       };
 
-      // Função para cancelar a edição
       const cancelEdit = () => {
         setActivityToEdit(null);
       };
 
-      // Função para aplicar o estilo de fundo
-      const applyBackground = (style) => {
+      // Função para aplicar e salvar o background no Firestore
+      const applyBackground = async (style) => {
         setBackgroundStyle(style);
+        try {
+            // Salva o estilo do background no Firestore em um documento fixo 'appBackground' na coleção 'settings'
+            await db.collection('settings').doc('appBackground').set({ style: style });
+            alert('Plano de fundo salvo com sucesso!');
+        } catch (error) {
+            console.error("Erro ao salvar plano de fundo:", error);
+            alert('Ocorreu um erro ao salvar o plano de fundo. Verifique o console para mais detalhes.');
+        }
       };
 
-      // Filtra as atividades com base no termo de busca nas palavras-chave (e também no título e descrição)
-      const filteredActivities = activities.filter((activity) =>
-        activity.keywords.some((keyword) =>
-          keyword.toLowerCase().includes(searchTerm.toLowerCase())
-        ) ||
+      // Filtra as atividades com base no termo de busca (título, descrição, palavras-chave)
+      const filteredActivities = activities.filter(
+        activity =>
         activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        activity.description.toLowerCase().includes(searchTerm.toLowerCase())
+        activity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (activity.keywords && activity.keywords.some(keyword =>
+            keyword.toLowerCase().includes(searchTerm.toLowerCase())
+        ))
       );
 
       return (
         <>
-          {/* Botão para abrir as configurações de plano de fundo */}
           <div style={{textAlign: 'right', marginBottom: '20px'}}>
               <button onClick={() => setShowBackgroundSettings(!showBackgroundSettings)} className="settings-button">
                   {showBackgroundSettings ? 'Fechar Configurações' : 'Mudar Plano de Fundo'}
@@ -500,6 +645,7 @@
             <BackgroundSettings
               onApplyBackground={applyBackground}
               onClose={() => setShowBackgroundSettings(false)}
+              currentBackground={backgroundStyle}
             />
           )}
 
