@@ -295,7 +295,7 @@
         <div className="activity-card">
           <h3>{activity.title}</h3>
           <p>{activity.description}</p>
-          <p><strong>Palavras-chave:</strong> {activity.keywords.join(', ')}</p>
+          <p><strong>Palavras-chave:</strong> {Array.isArray(activity.keywords) ? activity.keywords.join(', ') : 'Sem palavras-chave'}</p>
           {activity.videoLink && (
             <p><a href={activity.videoLink} target="_blank" rel="noopener noreferrer">Ver Vídeo</a></p>
           )}
